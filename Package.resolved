@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Cnetcdf",
+        "repositoryURL": "https://github.com/zhenghuiwin/Cnetcdf.git",
+        "state": {
+          "branch": null,
+          "revision": "f0fb9f2eb30912378cdd237c1cafe341ac489fb7",
+          "version": "0.0.6"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
