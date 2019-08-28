@@ -213,15 +213,42 @@ public class NCFile {
                                    lonIndex: (Int, Int),
                                    varId: Int32) throws -> GridCell {
         
-        let lat0 = latitudeVals[latsIndex.0]
-        let lat1 = latitudeVals[latsIndex.1]
-        let lon0 = longitudeVals[lonIndex.0]
-        let lon1 = longitudeVals[lonIndex.1]
+        let latLeft  = latitudeVals[latsIndex.0]
+        let latRight = latitudeVals[latsIndex.1]
+
+//        let lat0 = min(latLeft, latRight)
+//        let lat1 = max(latLeft, latRight)
+        var lat0: (lat: Double, index: Int) = (0,0)
+        var lat1: (lat: Double, index: Int) = (0,0)
+        if latLeft <= latRight {
+            lat0 = (lat: latLeft,  index: latsIndex.0)
+            lat1 = (lat: latRight, index: latsIndex.1)
+        } else {
+            lat0 = (lat: latRight, index: latsIndex.1)
+            lat1 = (lat: latLeft,  index: latsIndex.0)
+        }
         
-        let coord00 = Coordinate(latitude: lat0, longitude: lon0)
-        let coord01 = Coordinate(latitude: lat0, longitude: lon1)
-        let coord10 = Coordinate(latitude: lat1, longitude: lon0)
-        let coord11 = Coordinate(latitude: lat1, longitude: lon1)
+//        let lon0 = min(lonLeft, lonRight)
+//        let lon1 = max(lonLeft, lonRight)
+        let lonLeft  = longitudeVals[lonIndex.0]
+        let lonRight = longitudeVals[lonIndex.1]
+        
+        var lon0: (lon: Double, index: Int) = (0, 0)
+        var lon1: (lon: Double, index: Int) = (0, 0)
+        if lonLeft <= lonRight {
+            lon0 = (lon: lonLeft,  index: lonIndex.0)
+            lon1 = (lon: lonRight, index: lonIndex.1)
+        } else {
+            lon0 = (lon: lonRight, index: lonIndex.1)
+            lon1 = (lon: lonLeft,  index: lonIndex.0)
+        }
+        
+        
+        
+        let coord00 = Coordinate(latitude: lat0.lat, longitude: lon0.lon)
+        let coord01 = Coordinate(latitude: lat0.lat, longitude: lon1.lon)
+        let coord10 = Coordinate(latitude: lat1.lat, longitude: lon0.lon)
+        let coord11 = Coordinate(latitude: lat1.lat, longitude: lon1.lon)
         
         
         let misVal = try variableMissingValue(varId: varId, misName: missingValueName)
@@ -229,7 +256,7 @@ public class NCFile {
         guard 
             let val00: Double = (try values(
                 varId: varId,
-                start: [0, latsIndex.0, lonIndex.0],
+                start: [0, lat0.index, lon0.index],
                 count: [1, 1, 1], size: 1)
             ).first,
             !NCFileUtils.isEqual(double1: val00, double2: misVal) 
@@ -237,13 +264,10 @@ public class NCFile {
             throw VariableError.invalidValue("Failed to get the val00!")
         }
         
-
-        
-        
         guard 
             let val01: Double = (try values(
                 varId: varId,
-                start: [0, latsIndex.0, lonIndex.1],
+                start: [0, lat0.index, lon1.index],    // [0, latsIndex.0, lonIndex.1],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -255,7 +279,7 @@ public class NCFile {
         guard 
             let val10: Double = (try values(
                 varId: varId,
-                start: [0, latsIndex.1, lonIndex.0],
+                start: [0, lat1.index, lon0.index], //[0, latsIndex.1, lonIndex.0],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -267,7 +291,7 @@ public class NCFile {
         guard 
             let val11: Double = (try values(
                 varId: varId,
-                start: [0, latsIndex.1, lonIndex.1],
+                start: [0, lat1.index, lon1.index], //[0, latsIndex.1, lonIndex.1],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -275,6 +299,13 @@ public class NCFile {
         else {
             throw VariableError.invalidValue("Failed to get the val11!")
         }
+        
+        // TODO: FOR TEST, TO BE DELETED
+        print("00 -> [ \(val00), \(coord00.latitude), \(coord00.longitude) ]")
+        print("01 -> [ \(val01), \(coord01.latitude), \(coord01.longitude) ]")
+        print("10 -> [ \(val10), \(coord10.latitude), \(coord10.longitude) ]")
+        print("11 -> [ \(val11), \(coord11.latitude), \(coord11.longitude) ]")
+        // TODO: END FOR TEST, TO BE DELETED
         
         let p00 = NCPoint(coordinate: coord00, value: val00)  
         let p01 = NCPoint(coordinate: coord01, value: val01)
