@@ -24,56 +24,33 @@ public class NCFile {
     private let scaleFactorName: String
     private let offsetName: String
     
-    public init( latitudeName: String,
-                 longitudeName: String,
-                 missingValueName: String,
-                 scaleFactorName: String,
-                 offsetName: String,
-                 filePath: String) throws {
+    public init(    latitudeName: String,
+                    latitudeSize: Int = 0,
+                   longitudeName: String,
+                   longitudeSize: Int = 0,
+                missingValueName: String,
+                scaleFactorName : String,
+                      offsetName: String,
+                        filePath: String) throws {
         
         let ret = nc_open(filePath, NC_NOWRITE, &ncId)
         try NCFile.checkFile(result: ret)
         
-        latitudeVals  = try NCFile.coordinates(name: latitudeName,  ncId: ncId)
-        longitudeVals = try NCFile.coordinates(name: longitudeName, ncId: ncId)
         
-        self.latitudeName = latitudeName
+        latitudeVals  = try NCFile.coordinates(name: latitudeName,  varSize: latitudeSize,  ncId: ncId)
+        longitudeVals = try NCFile.coordinates(name: longitudeName, varSize: longitudeSize, ncId: ncId)
+
+        
+        self.latitudeName  = latitudeName
         self.longitudeName = longitudeName
         
         self.missingValueName = missingValueName
-        self.scaleFactorName = scaleFactorName
-        self.offsetName = offsetName
+        self.scaleFactorName  = scaleFactorName
+        self.offsetName       = offsetName
     }
     
     deinit {
         nc_close(ncId)
-    }
-    
-    
-    // MARK: --- FOR TEST ---
-    public func test (variable: String) throws {
-        
-        let d1: Double = 123.009
-        let d2: Double = 123.001
-        
-    
-        
-        print("\(NCFileUtils.isEqual(double1: d1, double2: d2))")
-        
-        let varId   = try variableId(ncId: ncId, variable: variable)
-        
-//        var no_fill: Int32 = 1
-//        var fill_valuep: Any = 0
-//        let ret = nc_inq_var_fill(ncId, varId, &no_fill, &fill_valuep)
-        var missingVal: Double = 0
-        let ret = nc_get_att_double(ncId, varId, "missing_value", &missingVal)
-        
-        try NCFile.checkVariable(result: ret)
-        
-        print("All is good!")
-//        print("no_fill: \(no_fill)")
-        print("missingVal: \(missingVal)")
-        
     }
     
     
@@ -92,7 +69,6 @@ public class NCFile {
                 longitudeVals.last!.isLessThanOrEqualTo(point.longitude) &&
                 point.longitude.isLessThanOrEqualTo(longitudeVals.first!)
               ) else {
-                
               throw VariableError.invalidValue("The input values of coordinate is invalid.")
         }
         
@@ -121,8 +97,8 @@ public class NCFile {
         
         let val: Double = interpolationRect.interpolate(point: point)
         
-        let scale  = try variableScaleFctor(varId: varId, scaleName: scaleFactorName)
-        let offset = try variableOffset(varId: varId, offsetName: offsetName)
+        let scale  = variableScaleFctor(varId: varId, scaleName: scaleFactorName)
+        let offset = variableOffset(varId: varId, offsetName: offsetName)
         
         return val * scale + offset
     }
@@ -184,28 +160,41 @@ public class NCFile {
         return type
     }
     
-    private func variableMissingValue(varId: Int32, misName: String) throws -> Double {
-        var misVal: Double = 0
+    private func variableMissingValue(varId: Int32, misName: String) -> Double {
+        var misVal: Double = 9999
         let ret = nc_get_att_double(ncId, varId, misName, &misVal)
-        try NCFile.checkVariable(result: ret)
+        do {
+            try NCFile.checkVariable(result: ret)
+        } catch let e {
+            print("Failed to find missing value of this file: \(e)")
+        }
         
         return misVal
     }
     
-    private func variableScaleFctor(varId: Int32, scaleName: String) throws -> Double {
+    private func variableScaleFctor(varId: Int32, scaleName: String) -> Double {
         var scale: Double = 0
         let ret = nc_get_att_double(ncId, varId, scaleName, &scale)
-        try NCFile.checkVariable(result: ret)
-        
-        return scale
+        do {
+            try NCFile.checkVariable(result: ret)
+            return scale
+        } catch let e {
+            print("Failed to find \(scaleName): \(e)")
+            return 1.0
+        }
     }
     
-    private func variableOffset(varId: Int32, offsetName: String) throws -> Double {
+    private func variableOffset(varId: Int32, offsetName: String) -> Double {
         var offset: Double = 0
         let ret = nc_get_att_double(ncId, varId, offsetName, &offset)
-        try NCFile.checkVariable(result: ret)
         
-        return offset
+        do {
+            try NCFile.checkVariable(result: ret)
+            return offset
+        } catch let e {
+            print("Failed to find \(offsetName): \(e)")
+            return 0
+        }
     }
     
     
@@ -251,7 +240,7 @@ public class NCFile {
         let coord11 = Coordinate(latitude: lat1.lat, longitude: lon1.lon)
         
         
-        let misVal = try variableMissingValue(varId: varId, misName: missingValueName)
+        let misVal = variableMissingValue(varId: varId, misName: missingValueName)
         
         guard 
             let val00: Double = (try values(
@@ -318,7 +307,7 @@ public class NCFile {
     
     // MARK: --- Static Functions ---
     
-    private static func coordinates(name: String, ncId: Int32) throws -> [Double] {
+    private static func coordinates(name: String, varSize: Int, ncId: Int32) throws -> [Double] {
         var varId: Int32 = -1
         
         var ret = nc_inq_varid(ncId, name, &varId)
@@ -326,12 +315,19 @@ public class NCFile {
         
         var len: size_t = 0
         ret = nc_inq_dimlen(ncId, varId, &len)
-        try checkVariable(result: ret)
-        
-        guard len > 0 else {
-            throw VariableError.invalidValue("The length of \(name) is less or equal to 0.")
+        do {
+            try checkVariable(result: ret)
+        } catch let e {
+            print("Failed to get size of [\(name)]: \(e). Will using the varSize: [\(varSize)].")
+            len = varSize
         }
         
+        len = max(len, varSize)
+        
+        guard len > 0 else {
+            throw VariableError.invalidValue("The length of [\(name)] is less or equal to 0.")
+        }
+
         var values: [Double] = Array(repeating: NCFile.missingType, count: len)
         
         ret = nc_get_var_double(ncId, varId, &values)
@@ -348,10 +344,18 @@ public class NCFile {
             throw VariableError.badNcid("Bad ncid.")
         case NC_ENOTVAR:
             throw VariableError.invalidVariableID("Invalid variable ID.")
+        case NC_EBADNAME:
+            throw VariableError.badName("Bad name. See object_name.")
+        case NC_EINVAL:
+            throw VariableError.invalidParameters("Invalid parameters.")
+        case NC_ENOTATT:
+            throw VariableError.invalidAttribute("Can not find attribute.")
+        case NC_ECHAR:
+            throw VariableError.faildConvertToChar("Can not convert to or from NC_CHAR.")
+        case NC_ENOMEM:
+            throw VariableError.outOfMemory("Out of memory.")
         case NC_EBADDIM:
             throw VariableError.invalidDimensionID("Invalid dimension ID or name.")
-        case NC_ENOTVAR:
-            throw VariableError.variableNotFound("Variable not found.")
         case NC_ERANGE:
             throw VariableError.outOfrange("One or more of the values are out of range.")
         case NC_EINDEFINE:

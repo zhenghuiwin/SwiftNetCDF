@@ -138,6 +138,43 @@ final class SwiftNetCDFTests: XCTestCase {
         }
     }
     
+    func test0401() {
+        //lat 28.6  lon 97.6
+        print("--- test0401 ----")
+//        let path = "/Users/zhenghuiwin/tools/test.nc"
+//        let path = "/Users/zhenghuiwin/Dropbox/workspace/swift_on_server/NetCDF_Swift/SwiftNetCDF/data_v.nc"
+        let path = "./data_v.nc"
+        if FileManager.default.fileExists(atPath: path) {
+            print("\(path) existed.")
+        } else {
+            print("\(path) is not existed.")
+            return
+        }
+        
+        do {
+            let file = try NCFile(
+                 latitudeName: "latitude",
+                longitudeName: "longitude",
+             missingValueName: "missing_value",
+              scaleFactorName: "scale_factor",
+                   offsetName: "add_offset",
+                filePath: path
+            )
+            print("Opened file.")
+            
+            // lat=30.65089&lon=104.07572
+            print("--- Will get value.")
+//            let varName = "Total_precipitation_surface_1_Hour_Accumulation"
+            let varName = "APCP_surface"
+            // lon 97.6
+            let value = try file.value(for: varName, at: Coordinate(latitude: 28.6, longitude: 97.78))
+            print("value: \(value)")
+        } catch let e {
+            print(e)
+        }
+        print("--- test0401 ----")
+    }
+    
     func test04() {
         do {
             let file = try NCFile(
@@ -377,26 +414,28 @@ final class SwiftNetCDFTests: XCTestCase {
 
     // 20 tests
     static var allTests = [
-        ("testExample", testExample),
-        ("test01", test01),
-        ("test02", test02),
-        ("test03", test03),
-        ("test04",test04),
-        ("test_NCFileUtils_neighborRange_0",test_NCFileUtils_neighborRange_0),
-        ("test_NCFileUtils_neighborRange", test_NCFileUtils_neighborRange),
-        ("test_NCFileUtils_neighborRange_1", test_NCFileUtils_neighborRange_1),
-        ("test_NCFileUtils_neighborRange_2", test_NCFileUtils_neighborRange_2),
-        ("test_NCFileUtils_neighborRange_3", test_NCFileUtils_neighborRange_3),
-        ("test_NCFileUtils_neighborRange_4", test_NCFileUtils_neighborRange_4),
-        ("test_NCFileUtils_neighborRange_5", test_NCFileUtils_neighborRange_5),
-        ("test_NCFileUtils_neighborRange_6",  test_NCFileUtils_neighborRange_6),
-        ("test_NCFileUtils_neighborRange_7", test_NCFileUtils_neighborRange_7),
-        ("test_NCFileUtils_neighborRange_8", test_NCFileUtils_neighborRange_8),
-        ("test_NCFileUtils_neighborRange_9", test_NCFileUtils_neighborRange_9),
-        ("test_NCFileUtils_neighborRange_10", test_NCFileUtils_neighborRange_10),
-        ("test_NCFileUtils_neighborRange_11", test_NCFileUtils_neighborRange_11),
-        ("test_NCFileUtils_neighborRange_12", test_NCFileUtils_neighborRange_12),
-        ("test_NCFileUtils_neighborRange_13", test_NCFileUtils_neighborRange_13),
+        ("test0401", test0401)
+//        ("testExample", testExample),
+//        ("test01", test01),
+//        ("test02", test02),
+//        ("test03", test03),
+//        ("test04",test04),
+//        ("test0401", test0401),
+//        ("test_NCFileUtils_neighborRange_0",test_NCFileUtils_neighborRange_0),
+//        ("test_NCFileUtils_neighborRange", test_NCFileUtils_neighborRange),
+//        ("test_NCFileUtils_neighborRange_1", test_NCFileUtils_neighborRange_1),
+//        ("test_NCFileUtils_neighborRange_2", test_NCFileUtils_neighborRange_2),
+//        ("test_NCFileUtils_neighborRange_3", test_NCFileUtils_neighborRange_3),
+//        ("test_NCFileUtils_neighborRange_4", test_NCFileUtils_neighborRange_4),
+//        ("test_NCFileUtils_neighborRange_5", test_NCFileUtils_neighborRange_5),
+//        ("test_NCFileUtils_neighborRange_6",  test_NCFileUtils_neighborRange_6),
+//        ("test_NCFileUtils_neighborRange_7", test_NCFileUtils_neighborRange_7),
+//        ("test_NCFileUtils_neighborRange_8", test_NCFileUtils_neighborRange_8),
+//        ("test_NCFileUtils_neighborRange_9", test_NCFileUtils_neighborRange_9),
+//        ("test_NCFileUtils_neighborRange_10", test_NCFileUtils_neighborRange_10),
+//        ("test_NCFileUtils_neighborRange_11", test_NCFileUtils_neighborRange_11),
+//        ("test_NCFileUtils_neighborRange_12", test_NCFileUtils_neighborRange_12),
+//        ("test_NCFileUtils_neighborRange_13", test_NCFileUtils_neighborRange_13),
 
     ]
 }
