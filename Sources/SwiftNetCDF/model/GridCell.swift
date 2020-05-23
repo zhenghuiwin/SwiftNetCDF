@@ -30,8 +30,6 @@ public struct GridCell {
         self.point10 = point10
         self.point01 = point01
         self.point11 = point11
-        
-        print("00: \(point00.value), 10: \(point10.value), 01: \(point01.value), 11: \(point11.value)")
     }
     
     func interpolate(point: Coordinate) -> Double {

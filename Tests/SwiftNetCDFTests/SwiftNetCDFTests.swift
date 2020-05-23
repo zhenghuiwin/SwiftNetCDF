@@ -167,7 +167,8 @@ final class SwiftNetCDFTests: XCTestCase {
 //            let varName = "Total_precipitation_surface_1_Hour_Accumulation"
             let varName = "APCP_surface"
             // lon 97.6
-            let value = try file.value(for: varName, at: Coordinate(latitude: 28.6, longitude: 97.78))
+            // inTime starts at 0
+            let value = try file.value(for: varName, at: Coordinate(latitude: 28.6, longitude: 97.6), atTime: 5)
             print("value: \(value)")
         } catch let e {
             print(e)

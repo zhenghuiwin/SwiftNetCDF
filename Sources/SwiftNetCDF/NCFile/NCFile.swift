@@ -56,7 +56,11 @@ public class NCFile {
     
     // MARK: --- Public Functions ---
     
-    public func value(for variable: String, at point: Coordinate) throws -> Double {
+    /// Get the value of variable at a position at specified time
+    /// - Parameter variable: The name of variable.
+    /// - Parameter point: The position used to get the value of variable.
+    /// - Parameter time: The time dimension which starts at 0.
+    public func value(for variable: String, at point: Coordinate, atTime time: Int = 0) throws -> Double {
         
         // Check the coordinate is in the area of the NCFile data set
         guard ( latitudeVals.first!.isLessThanOrEqualTo(point.latitude) &&
@@ -92,7 +96,8 @@ public class NCFile {
         let interpolationRect: GridCell = try interpolationArea(
             latsIndex: latRange,
              lonIndex: lonRange,
-                varId: varId
+                varId: varId,
+                 time: time
         )
         
         let val: Double = interpolationRect.interpolate(point: point)
@@ -200,7 +205,8 @@ public class NCFile {
     
     private func interpolationArea(latsIndex: (Int, Int),
                                    lonIndex: (Int, Int),
-                                   varId: Int32) throws -> GridCell {
+                                   varId: Int32,
+                                   time: Int = 0) throws -> GridCell {
         
         let latLeft  = latitudeVals[latsIndex.0]
         let latRight = latitudeVals[latsIndex.1]
@@ -245,7 +251,7 @@ public class NCFile {
         guard 
             let val00: Double = (try values(
                 varId: varId,
-                start: [0, lat0.index, lon0.index],
+                start: [time, lat0.index, lon0.index],
                 count: [1, 1, 1], size: 1)
             ).first,
             !NCFileUtils.isEqual(double1: val00, double2: misVal) 
@@ -256,7 +262,7 @@ public class NCFile {
         guard 
             let val01: Double = (try values(
                 varId: varId,
-                start: [0, lat0.index, lon1.index],    // [0, latsIndex.0, lonIndex.1],
+                start: [time, lat0.index, lon1.index],    // [0, latsIndex.0, lonIndex.1],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -268,7 +274,7 @@ public class NCFile {
         guard 
             let val10: Double = (try values(
                 varId: varId,
-                start: [0, lat1.index, lon0.index], //[0, latsIndex.1, lonIndex.0],
+                start: [time, lat1.index, lon0.index], //[0, latsIndex.1, lonIndex.0],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -280,7 +286,7 @@ public class NCFile {
         guard 
             let val11: Double = (try values(
                 varId: varId,
-                start: [0, lat1.index, lon1.index], //[0, latsIndex.1, lonIndex.1],
+                start: [time, lat1.index, lon1.index], //[0, latsIndex.1, lonIndex.1],
                 count: [1, 1, 1],
                 size: 1)
             ).first,
@@ -290,10 +296,10 @@ public class NCFile {
         }
         
         // TODO: FOR TEST, TO BE DELETED
-        print("00 -> [ \(val00), \(coord00.latitude), \(coord00.longitude) ]")
-        print("01 -> [ \(val01), \(coord01.latitude), \(coord01.longitude) ]")
-        print("10 -> [ \(val10), \(coord10.latitude), \(coord10.longitude) ]")
-        print("11 -> [ \(val11), \(coord11.latitude), \(coord11.longitude) ]")
+        print("00 -> [ \(val00) at [ \(coord00.latitude), \(coord00.longitude) ] ]")
+        print("01 -> [ \(val01) at [ \(coord01.latitude), \(coord01.longitude) ] ]")
+        print("10 -> [ \(val10) at [ \(coord10.latitude), \(coord10.longitude) ] ]")
+        print("11 -> [ \(val11) at [ \(coord11.latitude), \(coord11.longitude) ] ]")
         // TODO: END FOR TEST, TO BE DELETED
         
         let p00 = NCPoint(coordinate: coord00, value: val00)  
